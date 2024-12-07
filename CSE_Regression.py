@@ -4,13 +4,13 @@ import os
 
 # For data splitting and model training
 from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LinearRegression  # Updated import
+from sklearn.linear_model import LinearRegression
 
-# For model evaluation
+# For model evaluation (regression)
 from sklearn.metrics import (
     mean_squared_error,
     mean_absolute_error,
-    r2_score,
+    r2_score
 )
 
 # For data scaling and encoding
@@ -31,25 +31,23 @@ warnings.filterwarnings('ignore')
 RANDOM_STATE = 42
 
 # Flag to control whether plots are displayed
-SHOW_PLOTS = True  # Set to True to display plots, False for data collection
+SHOW_PLOTS = False  # Set to True to display plots, False for data collection
 
-# Task type
-TASK_TYPE = 'Regression'  # Adjusted task type
+# Task type - now Regression
+TASK_TYPE = 'Regression'  # Adjusted from 'Binary Classification' to 'Regression'
 
 # Dataset selection
-
-# 1
 TARGET_COLUMN = 'Salary'
 DATASET_NAME = 'Salary_dataset.csv'
 data = pd.read_csv('Regression_Datasets/Salary_dataset.csv')
 
-
 def preprocess_data(data, target_column):
     """
-    Preprocesses the data:
-    - Handles missing values separately for numerical and categorical columns
-    - Encodes categorical variables (if any)
+    Preprocesses the data for regression:
+    - Handles missing values
+    - Encodes categorical variables
     - Scales numerical features
+    - Ensures target variable is numeric
     """
     # Identify numerical and categorical columns
     numerical_cols = data.select_dtypes(include=[np.number]).columns.tolist()
@@ -67,37 +65,35 @@ def preprocess_data(data, target_column):
     if categorical_cols:
         data[categorical_cols] = data[categorical_cols].fillna(data[categorical_cols].mode().iloc[0])
 
-    # 2. Handle the Target Variable
-    # Ensure target variable is numeric
+    # 2. Ensure the target variable is numeric
     data[target_column] = pd.to_numeric(data[target_column], errors='coerce')
-    data = data.dropna(subset=[target_column])  # Drop rows where target is NaN
+    # Drop rows where target is NaN after conversion
+    data = data.dropna(subset=[target_column])
 
     # 3. Encode Categorical Variables
     if categorical_cols:
         data = pd.get_dummies(data, columns=categorical_cols, drop_first=True)
-        if SHOW_PLOTS:
-            print(f"One-Hot Encoded categorical columns: {categorical_cols}")
+        print(f"One-Hot Encoded categorical columns: {categorical_cols}")
     else:
-        if SHOW_PLOTS:
-            print("No categorical columns to encode.")
+        print("No categorical columns to encode.")
 
     # 4. Scale Numerical Features
     if numerical_cols:
         scaler = StandardScaler()
         data[numerical_cols] = scaler.fit_transform(data[numerical_cols])
     else:
-        if SHOW_PLOTS:
-            print("No numerical columns to scale.")
+        print("No numerical columns to scale.")
 
     return data
 
 def extract_dataset_features(data, target_column):
     """
     Extracts features of the dataset that might influence coreset selection methods.
+    For regression, we set num_classes, class_balance, and imbalance_ratio to None.
     """
     features = {}
 
-    # Number of Instances and Features
+    # Basic Dataset Information
     features['dataset_name'] = DATASET_NAME
     features['task_type'] = TASK_TYPE
     features['num_instances'] = data.shape[0]
@@ -119,10 +115,22 @@ def extract_dataset_features(data, target_column):
     else:
         features['feature_type'] = 'Categorical'
 
-    # For regression, 'num_classes', 'class_balance', and 'imbalance_ratio' are not applicable
-    features['num_classes'] = None
-    features['class_balance'] = None
-    features['imbalance_ratio'] = None
+    # For regression tasks, set class-related metrics to None
+    if TASK_TYPE == 'Regression':
+        features['num_classes'] = None
+        features['class_balance'] = None
+        features['imbalance_ratio'] = None
+    else:
+        # If classification were used, original code would apply. Kept for minimal changes.
+        target_values = data[target_column]
+        class_counts = target_values.value_counts()
+        features['num_classes'] = len(class_counts)
+        class_balance = (class_counts / class_counts.sum()).to_dict()
+        class_balance = {str(k): v for k, v in class_balance.items()}
+        features['class_balance'] = class_balance
+        majority_class = class_counts.max()
+        minority_class = class_counts.min()
+        features['imbalance_ratio'] = majority_class / minority_class
 
     # Missing Values
     features['missing_values'] = data.isnull().sum().sum()
@@ -195,14 +203,27 @@ def no_coreset_selection(X_train, y_train):
     return X_train, y_train
 
 def random_sampling_coreset(X_train, y_train):
-    fraction = 0.2  # Use 20% for coreset
+    fraction = 0.2  # Increased from 10% to 20%
     coreset_size = int(len(X_train) * fraction)
     coreset_size = max(1, coreset_size)
     indices = np.random.choice(len(X_train), size=coreset_size, replace=False)
     return X_train.iloc[indices], y_train.iloc[indices]
 
+def stratified_sampling_coreset(X_train, y_train):
+    # For regression, stratified sampling doesn't conceptually apply.
+    # Minimal changes: Use random sampling as a fallback.
+    fraction = 0.2  # Increased from 10% to 20%
+    coreset_size = int(len(X_train) * fraction)
+    coreset_size = max(1, coreset_size)
+    # Without classes, use random sampling
+    indices = np.random.choice(len(X_train), size=coreset_size, replace=False)
+    return X_train.iloc[indices], y_train.iloc[indices]
+
 def kmeans_clustering_coreset(X_train, y_train):
-    fraction = 0.05  # Use 5% for coreset
+    if len(X_train) > 100000:
+        fraction = 0.01  # Use 1% for large datasets
+    else:
+        fraction = 0.05  # Increased from 1% to 5%
     coreset_size = int(len(X_train) * fraction)
     coreset_size = max(1, coreset_size)
     if SHOW_PLOTS:
@@ -212,7 +233,6 @@ def kmeans_clustering_coreset(X_train, y_train):
     kmeans.fit(X_train)
     labels = kmeans.labels_
 
-    # Select one random sample from each cluster
     X_coreset = []
     y_coreset = []
     for i in range(coreset_size):
@@ -227,18 +247,21 @@ def kmeans_clustering_coreset(X_train, y_train):
     return X_coreset.reset_index(drop=True), y_coreset.reset_index(drop=True)
 
 def uncertainty_sampling_coreset(X_train, y_train):
-    fraction = 0.1  # Use 10% for coreset
+    # For regression, define uncertainty as the absolute residual
+    fraction = 0.1  # Increased from 5% to 10%
     coreset_size = int(len(X_train) * fraction)
     coreset_size = max(1, coreset_size)
     model = LinearRegression()
     model.fit(X_train, y_train)
     y_pred = model.predict(X_train)
     residuals = np.abs(y_train - y_pred)
-    indices = np.argsort(residuals)[-coreset_size:]  # Select samples with largest residuals
+    # Select samples with smallest residuals (least uncertain)
+    indices = np.argsort(residuals)[:coreset_size]
     return X_train.iloc[indices], y_train.iloc[indices]
 
 def importance_sampling_coreset(X_train, y_train):
-    fraction = 0.1  # Use 10% for coreset
+    # For regression, use residuals as importance weights
+    fraction = 0.1  # Increased from 5% to 10%
     coreset_size = int(len(X_train) * fraction)
     coreset_size = max(1, coreset_size)
     model = LinearRegression()
@@ -251,7 +274,7 @@ def importance_sampling_coreset(X_train, y_train):
     return X_train.iloc[indices], y_train.iloc[indices]
 
 def reservoir_sampling_coreset(X_train, y_train):
-    fraction = 0.2  # Use 20% for coreset
+    fraction = 0.2  # Increased from 10% to 20%
     coreset_size = int(len(X_train) * fraction)
     coreset_size = max(1, coreset_size)
     n = len(X_train)
@@ -260,40 +283,36 @@ def reservoir_sampling_coreset(X_train, y_train):
     selected_indices = indices[:coreset_size]
     return X_train.iloc[selected_indices], y_train.iloc[selected_indices]
 
-
 def gradient_based_coreset(X_train, y_train):
-    # Reset index to ensure default integer index
-    X_train = X_train.reset_index(drop=True)
-    y_train = y_train.reset_index(drop=True)
-
+    """
+    For regression, select samples with the lowest squared error loss.
+    """
     fraction = 0.1  # Adjust as needed
     total_coreset_size = int(len(X_train) * fraction)
     total_coreset_size = max(2, total_coreset_size)
 
     model = LinearRegression()
     model.fit(X_train, y_train)
-
     y_pred = model.predict(X_train)
-    residuals = y_train - y_pred
 
-    # Compute per-sample loss (squared errors)
-    loss_per_sample = residuals ** 2
+    # Squared error loss per sample
+    loss_per_sample = (y_train - y_pred) ** 2
 
-    # Now loss_per_sample has a default index starting from 0
-    # Sort samples by loss (ascending)
-    sorted_indices = loss_per_sample.sort_values(ascending=True).index
-
-    # Select samples with lowest loss
+    # Convert to NumPy array for positional indexing
+    loss_array = loss_per_sample.to_numpy()
+    sorted_indices = np.argsort(loss_array)
     selected_indices = sorted_indices[:total_coreset_size]
 
     X_coreset = X_train.iloc[selected_indices].reset_index(drop=True)
     y_coreset = y_train.iloc[selected_indices].reset_index(drop=True)
-
     return X_coreset, y_coreset
 
-
 def clustering_based_coreset(X_train, y_train):
-    fraction = 0.05  # Use 5% for coreset
+    # Same logic as classification, just without class concept
+    if len(X_train) > 100000:
+        fraction = 0.01
+    else:
+        fraction = 0.05
     coreset_size = int(len(X_train) * fraction)
     coreset_size = max(1, coreset_size)
     if SHOW_PLOTS:
@@ -303,7 +322,6 @@ def clustering_based_coreset(X_train, y_train):
     kmeans.fit(X_train)
     labels = kmeans.labels_
 
-    # Select one random sample from each cluster
     X_coreset = []
     y_coreset = []
     for i in range(coreset_size):
@@ -325,6 +343,7 @@ def train_and_evaluate(X_train, y_train, X_test, y_test, coreset_method):
     coreset_methods = {
         'none': no_coreset_selection,
         'random': random_sampling_coreset,
+        'stratified': stratified_sampling_coreset,
         'kmeans': kmeans_clustering_coreset,
         'uncertainty': uncertainty_sampling_coreset,
         'importance': importance_sampling_coreset,
@@ -338,16 +357,13 @@ def train_and_evaluate(X_train, y_train, X_test, y_test, coreset_method):
 
     X_coreset, y_coreset = coreset_methods[coreset_method](X_train, y_train)
 
-    # Initialize the Linear Regression model
+    # Use Linear Regression for regression tasks
     lr = LinearRegression()
-
-    # Train the model on the coreset
     lr.fit(X_coreset, y_coreset)
 
-    # Predict on the test set
     y_pred = lr.predict(X_test)
 
-    # Evaluate the model
+    # Compute regression metrics
     mse = mean_squared_error(y_test, y_pred)
     mae = mean_absolute_error(y_test, y_pred)
     r2 = r2_score(y_test, y_pred)
@@ -363,7 +379,7 @@ def train_and_evaluate(X_train, y_train, X_test, y_test, coreset_method):
         plt.grid(True)
         plt.show()
 
-    # Return metrics for comparison
+    # Return regression metrics
     return {
         'coreset_method': coreset_method.capitalize(),
         'coreset_size': len(X_coreset),
@@ -382,14 +398,20 @@ def main():
     X = data_preprocessed.drop(TARGET_COLUMN, axis=1)
     y = data_preprocessed[TARGET_COLUMN]
 
-    # Split the data into training and testing sets
+    # Split the data into training and testing sets without stratification for regression
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=RANDOM_STATE
     )
 
+    # Reset indices to ensure positional indexing from 0
+    X_train = X_train.reset_index(drop=True)
+    y_train = y_train.reset_index(drop=True)
+    X_test = X_test.reset_index(drop=True)
+    y_test = y_test.reset_index(drop=True)
+
     # Define coreset methods to test
     coreset_methods = [
-        'none', 'random', 'kmeans', 'uncertainty',
+        'none', 'random', 'stratified', 'kmeans', 'uncertainty',
         'importance', 'reservoir', 'gradient', 'clustering'
     ]
 
@@ -398,27 +420,38 @@ def main():
 
     # Loop over coreset methods
     for method in coreset_methods:
+        print(f"Applying coreset method: {method}")
         result = train_and_evaluate(X_train, y_train, X_test, y_test, method)
         results.append(result)
 
     # Create a DataFrame to compare results
     results_df = pd.DataFrame(results)
 
-    # Identify the best coreset method based on MSE (excluding 'None')
+    # Identify the best coreset method based on MSE (lowest MSE is best)
     results_df_non_none = results_df[results_df['coreset_method'] != 'None']
-    best_method_idx = results_df_non_none['mse'].idxmin()
-    best_method = results_df_non_none.loc[best_method_idx]
+    if not results_df_non_none.empty:
+        best_method_idx = results_df_non_none['mse'].idxmin()
+        best_method = results_df_non_none.loc[best_method_idx]
+    else:
+        best_method = None
 
     # Get baseline MSE
-    baseline_mse = results_df[results_df['coreset_method'] == 'None']['mse'].values[0]
-    performance_gain = baseline_mse - best_method['mse']
+    if 'None' in results_df['coreset_method'].values:
+        baseline_mse = results_df[results_df['coreset_method'] == 'None']['mse'].values[0]
+        if best_method is not None:
+            performance_gain = baseline_mse - best_method['mse']
+        else:
+            performance_gain = 0
+    else:
+        baseline_mse = None
+        performance_gain = 0
 
     # Prepare evaluation metrics DataFrame
     evaluation_metrics = results_df.copy()
     evaluation_metrics.insert(0, 'dataset_name', DATASET_NAME)  # Move dataset_name to first column
     evaluation_metrics.insert(1, 'task_type', TASK_TYPE)  # Insert task_type as second column
     evaluation_metrics['baseline_mse'] = baseline_mse
-    evaluation_metrics['performance_gain'] = baseline_mse - evaluation_metrics['mse']
+    evaluation_metrics['performance_gain'] = performance_gain
 
     # Define the columns to be used
     columns_order = [
@@ -449,20 +482,15 @@ def main():
         plt.title(f'Model Performance by Coreset Method on {DATASET_NAME}')
         plt.ylim(0, results_df['mse'].max() * 1.1)
         plt.grid(axis='y')
-
-        # Annotate bars with MSE scores
         for bar, score in zip(bars, results_df['mse']):
             yval = bar.get_height()
             plt.text(bar.get_x() + bar.get_width() / 2.0, yval + 0.005 * yval, f'{score:.4f}', ha='center', va='bottom')
-
         plt.xticks(rotation=45)
         plt.tight_layout()
         plt.show()
     else:
-        # Only write to CSV files if SHOW_PLOTS is False
-
-        # Write evaluation metrics to CSV
-        evaluation_metrics_file = 'evaluation_metrics_regression.csv'  # Updated file name
+        # Write evaluation metrics to a new file for regression
+        evaluation_metrics_file = 'evaluation_metrics_regression.csv'
 
         # Check if the file exists and if it is empty
         if not os.path.exists(evaluation_metrics_file) or os.stat(evaluation_metrics_file).st_size == 0:
@@ -478,20 +506,23 @@ def main():
             header=header_eval
         )
 
-        # Write dataset characteristics to meta_dataset_regression.csv
-        meta_dataset_file = 'meta_dataset_regression.csv'  # Updated file name
+        # Write dataset characteristics to meta_dataset.csv (same file as classification)
+        meta_dataset_file = 'meta_dataset.csv'
         meta_dataset_columns_order = [
             'dataset_name', 'task_type', 'num_instances', 'num_features',
             'num_numerical_features', 'num_categorical_features', 'feature_type',
-            'missing_values', 'missing_value_percentage', 'dimensionality', 'mean_correlation',
+            'num_classes', 'class_balance', 'imbalance_ratio', 'missing_values',
+            'missing_value_percentage', 'dimensionality', 'mean_correlation',
             'max_correlation', 'feature_redundancy', 'mean_of_means',
             'variance_of_means', 'mean_of_variances', 'variance_of_variances',
             'mean_skewness', 'mean_kurtosis', 'outlier_percentage', 'data_sparsity',
             'best_coreset_method'
         ]
 
-        # Add best coreset method to dataset_features
-        dataset_features['best_coreset_method'] = best_method['coreset_method']
+        if best_method is not None:
+            dataset_features['best_coreset_method'] = best_method['coreset_method']
+        else:
+            dataset_features['best_coreset_method'] = None
 
         # Convert dataset_features to DataFrame
         meta_dataset_df = pd.DataFrame([dataset_features])
@@ -510,7 +541,7 @@ def main():
         else:
             header_meta = False
 
-        # Write to meta_dataset_regression.csv
+        # Write to meta_dataset.csv
         meta_dataset_df.to_csv(
             meta_dataset_file,
             mode='a',
@@ -520,4 +551,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
