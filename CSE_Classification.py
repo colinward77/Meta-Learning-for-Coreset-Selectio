@@ -18,6 +18,8 @@ from sklearn.metrics import (
 
 # For data scaling and encoding
 from sklearn.preprocessing import StandardScaler
+from sklearn.impute import SimpleImputer
+import logging
 
 # For plotting
 import matplotlib.pyplot as plt
@@ -99,11 +101,11 @@ TASK_TYPE = 'Binary Classification'  # Adjust as needed
 #data = pd.read_csv('Classification_Datasets/mushroom_cleaned.csv')
 
 # 9
-TARGET_COLUMN = 'diagnosis'
-DATASET_NAME = 'breast-cancer.csv'
-POS_LABEL = 'M'
-NEG_LABEL = 'B'
-data = pd.read_csv('Classification_Datasets/breast-cancer.csv')
+#TARGET_COLUMN = 'diagnosis'
+#DATASET_NAME = 'breast-cancer.csv'
+#POS_LABEL = 'M'
+#NEG_LABEL = 'B'
+#data = pd.read_csv('Classification_Datasets/breast-cancer.csv')
 
 # 10
 #TARGET_COLUMN = 'y'
@@ -112,76 +114,272 @@ data = pd.read_csv('Classification_Datasets/breast-cancer.csv')
 #NEG_LABEL = 'no'
 #data = pd.read_csv('Classification_Datasets/bank_marketing.csv')
 
-def preprocess_data(data, target_column, pos_label, neg_label):
+# 11
+#TARGET_COLUMN = 'output'
+#DATASET_NAME = 'heart.csv'
+#POS_LABEL = 1
+#NEG_LABEL = 0
+#data = pd.read_csv('Classification_Datasets/heart.csv')
+
+# 12
+#TARGET_COLUMN = 'Potability'
+#DATASET_NAME = 'water_potability.csv'
+#POS_LABEL = 1
+#NEG_LABEL = 0
+#data = pd.read_csv('Classification_Datasets/water_potability.csv')
+
+# 13
+#TARGET_COLUMN = 'stroke'
+#DATASET_NAME = 'healthcare-dataset-stroke-data.csv'
+#POS_LABEL = 1
+#NEG_LABEL = 0
+#data = pd.read_csv('Classification_Datasets/healthcare-dataset-stroke-data.csv')
+
+# 14
+#TARGET_COLUMN = 'target'
+#DATASET_NAME = 'jobchange.csv'
+#POS_LABEL = '1.0'
+#NEG_LABEL = '0.0'
+#data = pd.read_csv('Classification_Datasets/jobchange.csv')
+
+# 15
+#TARGET_COLUMN = 'target_class'
+#DATASET_NAME = 'pulsar_star.csv'
+#POS_LABEL = '1.0'
+#NEG_LABEL = '0.0'
+#data = pd.read_csv('Classification_Datasets/pulsar_star.csv')
+
+# 16
+#TARGET_COLUMN = 'Purchased'
+#DATASET_NAME = 'Social_Network_Ads.csv'
+#POS_LABEL = 1
+#NEG_LABEL = 0
+#data = pd.read_csv('Classification_Datasets/Social_Network_Ads.csv')
+
+# 17
+#TARGET_COLUMN = 'column_ai'
+#DATASET_NAME = 'ionosphere_data.csv'
+#POS_LABEL = 'g'
+#NEG_LABEL = 'b'
+#data = pd.read_csv('Classification_Datasets/ionosphere_data.csv')
+
+# 18
+#TARGET_COLUMN = 'Fire Alarm'
+#DATASET_NAME = 'smoke_detection_iot.csv'
+#POS_LABEL = 1
+#NEG_LABEL = 0
+#data = pd.read_csv('Classification_Datasets/smoke_detection_iot.csv')
+
+# 19 --note this has an unexpected target column value, use for testing handling
+#TARGET_COLUMN = 'is_safe'
+#DATASET_NAME = 'water_quality_2.csv'
+#POS_LABEL = 1
+#NEG_LABEL = 0
+#data = pd.read_csv('Classification_Datasets/water_quality_2.csv')
+
+# 20
+#TARGET_COLUMN = 'Quality'
+#DATASET_NAME = 'banana_quality.csv'
+#POS_LABEL = 'Good'
+#NEG_LABEL = 'Bad'
+#data = pd.read_csv('Classification_Datasets/banana_quality.csv')
+
+# 21
+#TARGET_COLUMN = 'infected'
+#DATASET_NAME = 'AIDS_Classification.csv'
+#POS_LABEL = 1
+#NEG_LABEL = 0
+#data = pd.read_csv('Classification_Datasets/AIDS_Classification.csv')
+
+# 22
+#TARGET_COLUMN = 'y'
+#DATASET_NAME = 'EntrepreneurialStudents.csv'
+#POS_LABEL = 1
+#NEG_LABEL = 0
+#data = pd.read_csv('Classification_Datasets/EntrepreneurialStudents.csv')
+
+# 23
+#TARGET_COLUMN = 'DEATH_EVENT'
+#DATASET_NAME = 'heart_failure_clinical_records_dataset.csv'
+#POS_LABEL = 1
+#NEG_LABEL = 0
+#data = pd.read_csv('Classification_Datasets/heart_failure_clinical_records_dataset.csv')
+
+# 24
+#TARGET_COLUMN = 'name'
+#DATASET_NAME = 'citrus.csv'
+#POS_LABEL = 'orange'
+#NEG_LABEL = 'grapefruit'
+#data = pd.read_csv('Classification_Datasets/citrus.csv')
+
+# 25
+#TARGET_COLUMN = 'age_group'
+#DATASET_NAME = 'age_predictions_cleaned.csv'
+#POS_LABEL = 1
+#NEG_LABEL = 0
+#data = pd.read_csv('Classification_Datasets/age_predictions_cleaned.csv')
+
+#---Sets to evaluate metamodel's prediction---#
+# 1 - resevoir
+#TARGET_COLUMN = 'Target'
+#DATASET_NAME = 'Customertravel.csv'
+#POS_LABEL = 1
+#NEG_LABEL = 0
+#data = pd.read_csv('MetaModel_Test_Sets/Customertravel.csv')
+
+# 2 - Importance/Uncertainty/resevoir/custering all good
+#TARGET_COLUMN = 'Purchased'
+#DATASET_NAME = 'social_ads.csv'
+#POS_LABEL = 1
+#NEG_LABEL = 0
+#data = pd.read_csv('MetaModel_Test_Sets/social_ads.csv')
+
+# 3 - All bad but Clustering
+#TARGET_COLUMN = 'Growth_Milestone'
+#DATASET_NAME = 'plant_growth_data.csv'
+#POS_LABEL = 1
+#NEG_LABEL = 0
+#data = pd.read_csv('MetaModel_Test_Sets/plant_growth_data.csv')
+
+# 4 - Resevoir
+#TARGET_COLUMN = 'Outcome'
+#DATASET_NAME = 'diabetes_dataset.csv'
+#POS_LABEL = 1
+#NEG_LABEL = 0
+#data = pd.read_csv('MetaModel_Test_Sets/diabetes_dataset.csv')
+
+# 5 -Gradient
+#TARGET_COLUMN = 'PurchaseStatus'
+#DATASET_NAME = 'customer_purchase_data.csv'
+#POS_LABEL = 1
+#NEG_LABEL = 0
+#data = pd.read_csv('MetaModel_Test_Sets/customer_purchase_data.csv')
+
+# 6
+#TARGET_COLUMN = 'happy'
+#DATASET_NAME = 'happydata.csv'
+#POS_LABEL = 1
+#NEG_LABEL = 0
+#data = pd.read_csv('MetaModel_Test_Sets/happydata.csv')
+
+# 7 - most features have clear linear seperability leading to 100% sometimes
+TARGET_COLUMN = 'Class'
+DATASET_NAME = 'riceClassification.csv'
+POS_LABEL = 1
+NEG_LABEL = 0
+data = pd.read_csv('MetaModel_Test_Sets/riceClassification.csv')
+
+def preprocess_data(data, target_column, pos_label, neg_label, handle_unexpected='drop'):
     """
-    Preprocesses the data:
+    Preprocesses the data for binary classification:
     - Handles missing values separately for numerical and categorical columns
-    - Encodes categorical variables (if any)
-    - Scales numerical features
+    - Encodes categorical variables (if any) using one-hot encoding
+    - Scales numerical features using StandardScaler
     - Encodes the target variable using POS_LABEL and NEG_LABEL
+    - Removes or raises errors for unexpected labels based on the handle_unexpected parameter
+
+    Parameters:
+    - data (pd.DataFrame): The input dataset.
+    - target_column (str): The name of the target column.
+    - pos_label: The label to be mapped to 1.
+    - neg_label: The label to be mapped to 0.
+    - handle_unexpected (str): How to handle unexpected labels. Options:
+        - 'drop': Remove rows with unexpected labels.
+        - 'error': Raise an error if unexpected labels are found.
+
+    Returns:
+    - pd.DataFrame: The preprocessed dataset.
     """
-    # Identify numerical and categorical columns
+
+    # Set up logging
+    logger = logging.getLogger(__name__)
+    if not logger.hasHandlers():
+        # Configure logging only if it hasn't been configured yet
+        logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+
+    # 1. Identify Numerical and Categorical Columns
     numerical_cols = data.select_dtypes(include=[np.number]).columns.tolist()
     categorical_cols = data.select_dtypes(include=['object', 'category']).columns.tolist()
 
-    # Exclude the target column from features
+    # Exclude the target column from feature lists
     if target_column in numerical_cols:
         numerical_cols.remove(target_column)
     if target_column in categorical_cols:
         categorical_cols.remove(target_column)
 
-    # 1. Handle Missing Values
+    logger.info(f"Numerical columns: {numerical_cols}")
+    logger.info(f"Categorical columns: {categorical_cols}")
+
+    # 2. Handle Missing Values
+    # Impute numerical columns with mean
     if numerical_cols:
-        data[numerical_cols] = data[numerical_cols].fillna(data[numerical_cols].mean())
+        imputer_num = SimpleImputer(strategy='mean')
+        data[numerical_cols] = imputer_num.fit_transform(data[numerical_cols])
+        logger.info("Imputed missing values in numerical columns with mean.")
+    else:
+        logger.info("No numerical columns to impute.")
+
+    # Impute categorical columns with mode
     if categorical_cols:
-        data[categorical_cols] = data[categorical_cols].fillna(data[categorical_cols].mode().iloc[0])
+        imputer_cat = SimpleImputer(strategy='most_frequent')
+        data[categorical_cols] = imputer_cat.fit_transform(data[categorical_cols])
+        logger.info("Imputed missing values in categorical columns with mode.")
+    else:
+        logger.info("No categorical columns to impute.")
 
-    # 2. Handle the Target Variable
-    # Convert target column to string for consistent processing
+    # 3. Process the Target Variable
+    # Standardize target labels: lowercase and strip whitespace
     data[target_column] = data[target_column].astype(str).str.strip().str.lower()
-
-    # Convert POS_LABEL and NEG_LABEL to lowercase strings
     pos_label = str(pos_label).strip().lower()
     neg_label = str(neg_label).strip().lower()
 
-    # Map target values to 1 and 0
     label_mapping = {pos_label: 1, neg_label: 0}
+    logger.info(f"Mapping target labels: {label_mapping}")
 
-    # Check for unexpected labels
-    unique_labels = set(data[target_column].unique())
-    expected_labels = set(label_mapping.keys())
-    unexpected_labels = unique_labels - expected_labels
-
-    if unexpected_labels:
-        print(f"Warning: Found unexpected labels in the target column '{target_column}': {unexpected_labels}")
-        print(f"Expected labels are: {expected_labels}")
-        # Optionally, handle unexpected labels (e.g., remove or map them)
-        # For now, we'll proceed and map only the expected labels
-
-    # Map the labels
+    # Map target labels to 1 and 0
     data[target_column] = data[target_column].map(label_mapping)
 
-    # Drop rows with NaN in the target column after mapping (if any)
-    data = data.dropna(subset=[target_column])
+    # Identify unexpected labels (labels not in pos_label or neg_label)
+    unexpected_mask = data[target_column].isnull()
+    num_unexpected = unexpected_mask.sum()
+
+    if num_unexpected > 0:
+        unexpected_labels = data.loc[unexpected_mask, target_column].unique()
+        unexpected_labels = data.loc[unexpected_mask, target_column].unique()
+        unexpected_labels = data.loc[unexpected_mask, target_column].dropna().unique()
+        logger.warning(f"Found {num_unexpected} rows with unexpected labels: {unexpected_labels}")
+
+        if handle_unexpected == 'drop':
+            data = data[~unexpected_mask].copy()
+            logger.info(f"Dropped {num_unexpected} rows with unexpected labels.")
+        elif handle_unexpected == 'error':
+            raise ValueError(f"Unexpected labels found in target column '{target_column}': {unexpected_labels}")
+        else:
+            raise ValueError("handle_unexpected parameter must be either 'drop' or 'error'.")
+
+    else:
+        logger.info("No unexpected labels found in the target column.")
 
     # Convert target column to integer type
     data[target_column] = data[target_column].astype(int)
 
-    # 3. Encode Categorical Variables
+    # 4. Encode Categorical Variables
     if categorical_cols:
         data = pd.get_dummies(data, columns=categorical_cols, drop_first=True)
-        print(f"One-Hot Encoded categorical columns: {categorical_cols}")
+        logger.info(f"One-Hot Encoded categorical columns: {categorical_cols}")
     else:
-        print("No categorical columns to encode.")
+        logger.info("No categorical columns to encode.")
 
-    # 4. Scale Numerical Features
+    # 5. Scale Numerical Features
     if numerical_cols:
         scaler = StandardScaler()
         data[numerical_cols] = scaler.fit_transform(data[numerical_cols])
+        logger.info("Scaled numerical features using StandardScaler.")
     else:
-        print("No numerical columns to scale.")
+        logger.info("No numerical columns to scale.")
 
     return data
+
 
 def extract_dataset_features(data, target_column):
     """
@@ -223,10 +421,6 @@ def extract_dataset_features(data, target_column):
     majority_class = class_counts.max()
     minority_class = class_counts.min()
     features['imbalance_ratio'] = majority_class / minority_class
-
-    # Missing Values
-    features['missing_values'] = data.isnull().sum().sum()
-    features['missing_value_percentage'] = features['missing_values'] / (features['num_instances'] * features['num_features'])
 
     # Dimensionality
     features['dimensionality'] = features['num_features'] / features['num_instances']
@@ -612,7 +806,7 @@ def main():
         # Only write to CSV files if SHOW_PLOTS is False
 
         # Write evaluation metrics to CSV
-        evaluation_metrics_file = 'evaluation_metrics.csv'
+        evaluation_metrics_file = 'evaluation_metrics_bin_classification.csv'
 
         # Check if the file exists and if it is empty
         if not os.path.exists(evaluation_metrics_file) or os.stat(evaluation_metrics_file).st_size == 0:
@@ -633,12 +827,14 @@ def main():
         meta_dataset_columns_order = [
             'dataset_name', 'task_type', 'num_instances', 'num_features',
             'num_numerical_features', 'num_categorical_features', 'feature_type',
-            'num_classes', 'class_balance', 'imbalance_ratio', 'missing_values',
-            'missing_value_percentage', 'dimensionality', 'mean_correlation',
+            'num_classes', 'class_balance', 'imbalance_ratio',
+            #'missing_values',
+            #'missing_value_percentage',
+            'dimensionality', 'mean_correlation',
             'max_correlation', 'feature_redundancy', 'mean_of_means',
             'variance_of_means', 'mean_of_variances', 'variance_of_variances',
             'mean_skewness', 'mean_kurtosis', 'outlier_percentage', 'data_sparsity',
-            'best_coreset_method'  # Removed performance_gain
+            'best_coreset_method'
         ]
 
         # Add best coreset method to dataset_features
