@@ -1,3 +1,4 @@
 Classification_Datasets/*.csv
 Regression_Datasets/*.csv
 MetaModel_Test_Set/*.csv
+MultiClass_Datasets/*.csv

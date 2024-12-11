@@ -228,11 +228,11 @@ TASK_TYPE = 'Binary Classification'  # Adjust as needed
 #data = pd.read_csv('MetaModel_Test_Sets/Customertravel.csv')
 
 # 2 - Importance/Uncertainty/resevoir/custering all good
-#TARGET_COLUMN = 'Purchased'
-#DATASET_NAME = 'social_ads.csv'
-#POS_LABEL = 1
-#NEG_LABEL = 0
-#data = pd.read_csv('MetaModel_Test_Sets/social_ads.csv')
+TARGET_COLUMN = 'Purchased'
+DATASET_NAME = 'social_ads.csv'
+POS_LABEL = 1
+NEG_LABEL = 0
+data = pd.read_csv('MetaModel_Test_Sets/social_ads.csv')
 
 # 3 - All bad but Clustering
 #TARGET_COLUMN = 'Growth_Milestone'
@@ -263,11 +263,11 @@ TASK_TYPE = 'Binary Classification'  # Adjust as needed
 #data = pd.read_csv('MetaModel_Test_Sets/happydata.csv')
 
 # 7 - most features have clear linear seperability leading to 100% sometimes
-TARGET_COLUMN = 'Class'
-DATASET_NAME = 'riceClassification.csv'
-POS_LABEL = 1
-NEG_LABEL = 0
-data = pd.read_csv('MetaModel_Test_Sets/riceClassification.csv')
+#TARGET_COLUMN = 'Class'
+#DATASET_NAME = 'riceClassification.csv'
+#POS_LABEL = 1
+#NEG_LABEL = 0
+#data = pd.read_csv('MetaModel_Test_Sets/riceClassification.csv')
 
 def preprocess_data(data, target_column, pos_label, neg_label, handle_unexpected='drop'):
     """
