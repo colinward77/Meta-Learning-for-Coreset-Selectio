@@ -34,8 +34,12 @@ from sklearn.impute import SimpleImputer
 # Set random seed for reproducibility
 RANDOM_STATE = 42
 
+# Optionally set a fixed random seed for further reproducibility
+#np.random.seed(493)
+
 # Flag to control whether plots are displayed
 SHOW_PLOTS = True  # Set to True to display plots, False for data collection
+# SHOW_PLOTS set up by Colin
 
 # Task type - now Regression
 TASK_TYPE = 'Regression'  # Adjusted from 'Binary Classification' to 'Regression'
@@ -95,9 +99,9 @@ TASK_TYPE = 'Regression'  # Adjusted from 'Binary Classification' to 'Regression
 #data = pd.read_csv('Regression_Datasets/concrete_data.csv')
 
 # 11
-# TARGET_COLUMN = 'Scores'
-# DATASET_NAME = 'score.csv'
-# data = pd.read_csv('Regression_Datasets/score.csv')
+#TARGET_COLUMN = 'Scores'
+#DATASET_NAME = 'score.csv'
+#data = pd.read_csv('Regression_Datasets/score.csv')
 
 # 12
 #TARGET_COLUMN = 'Car Purchase Amount'
@@ -169,15 +173,26 @@ TASK_TYPE = 'Regression'  # Adjusted from 'Binary Classification' to 'Regression
 #DATASET_NAME = 'Calihousing.csv'
 #data = pd.read_csv('Regression_Datasets/Calihousing.csv')
 
+#############################################
+#---Sets to check meta-model's prediction---#
+# DO NOT COLLECT METADATA FOR THESE,
+# THIS WOULD LEAD TO DATA LEAKAGE
+
+# 1
+#TARGET_COLUMN = 'CO2 Emissions(g/km)'
+#DATASET_NAME = 'CO2 Emissions.csv'
+#data = pd.read_csv('MetaModel_Test_Sets/CO2 Emissions.csv')
+
 
 def preprocess_data(data, target_column):
-    """
-    Preprocesses the data for regression:
-    - Handles missing values
-    - Encodes categorical variables
-    - Scales numerical features
-    - Ensures target variable is numeric
-    """
+    # - Colin
+
+    # Preprocesses the data for regression:
+    # - Handles missing values
+    # - Encodes categorical variables
+    # - Scales numerical features
+    # - Ensures target variable is numeric
+
     # Identify numerical and categorical columns
     numerical_cols = data.select_dtypes(include=[np.number]).columns.tolist()
     categorical_cols = data.select_dtypes(include=['object', 'category']).columns.tolist()
@@ -217,10 +232,12 @@ def preprocess_data(data, target_column):
 
 
 def extract_dataset_features(data, target_column):
-    """
-    Extracts features of the dataset that might influence coreset selection methods.
-    For regression, we set num_classes, class_balance, and imbalance_ratio to None.
-    """
+    # - Colin
+
+    # Extracts features of the dataset that might influence coreset selection methods.
+    # These features will be used for meta-data.
+    # For regression, we set num_classes, class_balance, and imbalance_ratio to None.
+
     features = {}
 
     # Basic Dataset Information
@@ -331,12 +348,18 @@ def extract_dataset_features(data, target_column):
 
 # Coreset Selection Techniques
 
+# Stratified and Ucertainty removed because their core concepts aren't applicable to regression.
+# These two were replaced by Farthest and Leverage which are two coreset selection techniques
+# that are known to be best when used for regression.
+
 def no_coreset_selection(X_train, y_train):
+    # - Ahmed
     return X_train, y_train
 
 
 def random_sampling_coreset(X_train, y_train):
-    fraction = 0.2  # Increased from 10% to 20%
+    # - Ahmed
+    fraction = 0.2
     coreset_size = int(len(X_train) * fraction)
     coreset_size = max(1, coreset_size)
     indices = np.random.choice(len(X_train), size=coreset_size, replace=False)
@@ -344,10 +367,11 @@ def random_sampling_coreset(X_train, y_train):
 
 
 def kmeans_clustering_coreset(X_train, y_train):
-    if len(X_train) > 100000:
-        fraction = 0.01  # Use 1% for large datasets
+    # - Ahmed
+    if len(X_train) > 50000:
+       fraction = 0.05  # Use 5% for large datasets due to large computational demand
     else:
-        fraction = 0.05  # Increased from 1% to 5%
+        fraction = 0.20
     coreset_size = int(len(X_train) * fraction)
     coreset_size = max(1, coreset_size)
     if SHOW_PLOTS:
@@ -372,8 +396,13 @@ def kmeans_clustering_coreset(X_train, y_train):
 
 
 def importance_sampling_coreset(X_train, y_train):
-    # For regression, use residuals as importance weights
-    fraction = 0.1  # Increased from 5% to 10%
+    # Based on Ahmed's importance coreset function but has
+    # adjustments made by Colin
+
+    # For regression, adjusted to use residuals as importance weights
+    # This adaptation retains core concept while being better suited for regression
+    fraction = 0.25  # Increased
+
     coreset_size = int(len(X_train) * fraction)
     coreset_size = max(1, coreset_size)
     model = LinearRegression()
@@ -387,7 +416,8 @@ def importance_sampling_coreset(X_train, y_train):
 
 
 def reservoir_sampling_coreset(X_train, y_train):
-    fraction = 0.2  # Increased from 10% to 20%
+    # - Ahmed
+    fraction = 0.25  # Increased
     coreset_size = int(len(X_train) * fraction)
     coreset_size = max(1, coreset_size)
     n = len(X_train)
@@ -398,10 +428,12 @@ def reservoir_sampling_coreset(X_train, y_train):
 
 
 def gradient_based_coreset(X_train, y_train):
-    """
-    For regression, select samples with the highest squared error loss.
-    """
-    fraction = 0.1  # Adjust as needed
+    # - Colin
+
+    # For regression, select samples with the highest squared error loss.
+    # This adaptation retains core concept while being better suited for regression
+
+    fraction = 0.25  # Increased
     total_coreset_size = int(len(X_train) * fraction)
     total_coreset_size = max(2, total_coreset_size)
 
@@ -422,17 +454,20 @@ def gradient_based_coreset(X_train, y_train):
 
 
 def farthest_point_sampling_coreset(X_train, y_train):
-    """
-    Selects samples using Farthest Point Sampling to maximize diversity.
+    # - Colin
 
-    Args:
-        X_train (DataFrame): Training features.
-        y_train (Series): Training target.
+    # New coreset technique only tested for the regression datasets in this script.
+    # Selects samples using Farthest Point Sampling to maximize diversity.
+    #
+    # Args:
+    #     X_train (DataFrame): Training features.
+    #     y_train (Series): Training target.
+    #
+    # Returns:
+    #     DataFrame, Series: Selected coreset.
 
-    Returns:
-        DataFrame, Series: Selected coreset.
-    """
-    fraction = 0.075  # Adjust the fraction as needed
+    fraction = 0.25
+
     coreset_size = int(len(X_train) * fraction)
     coreset_size = max(1, coreset_size)
 
@@ -469,17 +504,21 @@ def farthest_point_sampling_coreset(X_train, y_train):
 
 
 def leverage_sampling_coreset(X_train, y_train):
-    """
-    Selects samples with the highest leverage scores.
+    # - Colin
 
-    Args:
-        X_train (DataFrame): Training features.
-        y_train (Series): Training target.
 
-    Returns:
-        DataFrame, Series: Selected coreset.
-    """
-    fraction = 0.1  # Adjust as needed
+    # New coreset technique only tested for the regression datasets in this script.
+    # Selects samples with the highest leverage scores.
+    #
+    # Args:
+    #     X_train (DataFrame): Training features.
+    #     y_train (Series): Training target.
+    #
+    # Returns:
+    #     DataFrame, Series: Selected coreset.
+
+    fraction = 0.2
+
     coreset_size = int(len(X_train) * fraction)
     coreset_size = max(1, coreset_size)
 
@@ -511,15 +550,19 @@ def leverage_sampling_coreset(X_train, y_train):
 
 
 def clustering_based_coreset(X_train, y_train):
+    # - Ahmed
+
+    # Minimally adjusted for regression by Colin
     # Same logic as classification, just without class concept
-    if len(X_train) > 100000:
-        fraction = 0.01
+
+    if len(X_train) > 50000:
+       fraction = 0.05 # Use 5% for large datasets due to large computational demand
     else:
-        fraction = 0.05
+       fraction = 0.20
     coreset_size = int(len(X_train) * fraction)
     coreset_size = max(1, coreset_size)
-    if SHOW_PLOTS:
-        print(f"Using coreset size {coreset_size} for MiniBatchKMeans clustering.")
+    #if SHOW_PLOTS:
+        #print(f"Using coreset size {coreset_size} for MiniBatchKMeans clustering.")
 
     kmeans = MiniBatchKMeans(n_clusters=coreset_size, random_state=RANDOM_STATE, batch_size=10000)
     kmeans.fit(X_train)
@@ -541,9 +584,13 @@ def clustering_based_coreset(X_train, y_train):
 
 # Function to train and evaluate the model
 def train_and_evaluate(X_train, y_train, X_test, y_test, coreset_method):
-    """
-    Applies coreset selection, trains the Linear Regression model, and evaluates it.
-    """
+    # - Colin
+
+    # Applies coreset selection, trains the Linear Regression model, and evaluates it.
+    # returns evaluation metrics for comparison and also to be collected as more data.
+    # Because of different metrics, these will be collected in a separate csv file from classification.
+    # evaluation data will not be used for meta-model, it is solely for further insights.
+
     coreset_methods = {
         'none': no_coreset_selection,
         'random': random_sampling_coreset,
@@ -552,8 +599,8 @@ def train_and_evaluate(X_train, y_train, X_test, y_test, coreset_method):
         'reservoir': reservoir_sampling_coreset,
         'gradient': gradient_based_coreset,
         'clustering': clustering_based_coreset,
-        'leverage': leverage_sampling_coreset,  # Retained
-        'farthest': farthest_point_sampling_coreset  # New method
+        'leverage': leverage_sampling_coreset,
+        'farthest': farthest_point_sampling_coreset
     }
 
     if coreset_method not in coreset_methods:
@@ -594,6 +641,8 @@ def train_and_evaluate(X_train, y_train, X_test, y_test, coreset_method):
 
 
 def main():
+    # - Colin
+
     # Extract dataset features
     dataset_features = extract_dataset_features(data, TARGET_COLUMN)
 
@@ -731,7 +780,7 @@ def main():
             'num_numerical_features', 'num_categorical_features', 'feature_type',
             'num_classes', 'class_balance', 'imbalance_ratio',
             #'missing_values',
-            #'missing_value_percentage',
+            #'missing_value_percentage', # previously collected but removed. Same reason as Classification
             'dimensionality', 'mean_correlation',
             'max_correlation', 'feature_redundancy', 'mean_of_means',
             'variance_of_means', 'mean_of_variances', 'variance_of_variances',

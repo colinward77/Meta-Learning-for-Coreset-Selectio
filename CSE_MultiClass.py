@@ -35,20 +35,22 @@ warnings.filterwarnings('ignore')
 # Set random seed for reproducibility
 RANDOM_STATE = 42
 
+# Optionally set a fixed random seed for further reproducibility
 #np.random.seed(1)
 
 # Flag to control whether plots are displayed
 SHOW_PLOTS = True  # Set to True to display plots, False for data collection
+# SHOW_PLOTS by Colin
 
 TASK_TYPE = 'Multi-Class Classification'
 
-HAS_NULL_CLASS = False
+HAS_NULL_CLASS = False # One dataset has a class represented by null
 
 # 1
 #TARGET_COLUMN = 'admission'
 #DATASET_NAME = 'MBA.csv'
 #data = pd.read_csv('MultiClass_Datasets/MBA.csv')
-#HAS_NULL_CLASS = True
+#HAS_NULL_CLASS = True # Only dataset where this is true
 
 # 2
 #TARGET_COLUMN = 'esrb_rating'
@@ -120,7 +122,10 @@ HAS_NULL_CLASS = False
 #DATASET_NAME = 'IRIS.csv'
 #data = pd.read_csv('MultiClass_Datasets/IRIS.csv')
 
-#----following not added to use for model testing --
+#############################################
+#---Sets to check meta-model's prediction---#
+# DO NOT COLLECT METADATA FOR THESE,
+# THIS WOULD LEAD TO DATA LEAKAGE
 
 # 16
 #TARGET_COLUMN = 'class'
@@ -133,12 +138,21 @@ HAS_NULL_CLASS = False
 #data = pd.read_csv('MetaModel_Test_Sets/obesitypred_eatinghabits_physical.csv')
 
 # 18
-TARGET_COLUMN = 'genre'
-DATASET_NAME = 'all_audio_features_modified.csv'
-data = pd.read_csv('MetaModel_Test_Sets/all_audio_features_modified.csv')
+#TARGET_COLUMN = 'genre'
+#DATASET_NAME = 'all_audio_features_modified.csv'
+#data = pd.read_csv('MetaModel_Test_Sets/all_audio_features_modified.csv')
 
 
 def preprocess_data(data, target_column, handle_unexpected='drop'):
+    # - Based off Colin's preprocess_function from binary class, but
+    # has been adjusted by Ahmed for Multi Class
+
+    # Preprocesses the data for multi class:
+    # - Handles missing values
+    # - Encodes categorical variables
+    # - Scales numerical features
+    # - Label encodes target classes
+
     logger = logging.getLogger(__name__)
     if not logger.hasHandlers():
         logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
@@ -173,7 +187,7 @@ def preprocess_data(data, target_column, handle_unexpected='drop'):
     if HAS_NULL_CLASS:
         data[target_column] = data[target_column].fillna('null_class')
 
-    le = LabelEncoder()
+    le = LabelEncoder() # Used label encoder instead of having user define the classes
     data[target_column] = le.fit_transform(data[target_column])
     logger.info("Encoded target column using LabelEncoder for multi-class classification.")
 
@@ -196,6 +210,11 @@ def preprocess_data(data, target_column, handle_unexpected='drop'):
 
 
 def extract_dataset_features(data, target_column):
+    # - Colin
+
+    # Extracts features of the dataset that might influence coreset selection methods.
+    # These features will be used for meta-data.
+
     features = {}
 
     features['dataset_name'] = DATASET_NAME
@@ -278,10 +297,12 @@ def extract_dataset_features(data, target_column):
 
 
 def ensure_class_coverage(X_coreset, y_coreset, X_train, y_train):
-    """
-    Ensures that all classes present in y_train are also in y_coreset.
-    If any are missing, add one sample from each missing class.
-    """
+    # - Colin. Added during data collection
+
+    # Helper function used in coreset functions that don't guaruntee class coverage
+    # Ensures that all classes present in y_train are also in y_coreset.
+    # If any are missing, add one sample from each missing class.
+
     classes_in_full = np.unique(y_train)
     classes_in_coreset = np.unique(y_coreset)
     missing_classes = set(classes_in_full) - set(classes_in_coreset)
@@ -299,10 +320,11 @@ def ensure_class_coverage(X_coreset, y_coreset, X_train, y_train):
 
 
 def no_coreset_selection(X_train, y_train):
-    # Returns full dataset, no need to ensure coverage
+    # - Ahmed
     return X_train, y_train
 
 def random_sampling_coreset(X_train, y_train):
+    # - Ahmed
     fraction = 0.2
     coreset_size = int(len(X_train) * fraction)
     coreset_size = max(1, coreset_size)
@@ -315,8 +337,8 @@ def random_sampling_coreset(X_train, y_train):
     return X_coreset, y_coreset
 
 def stratified_sampling_coreset(X_train, y_train):
-    # Stratified should ensure coverage by design, but only if coreset_size > number_of_classes
-    fraction = 0.2
+    # - Ahmed
+    fraction = 0.20
     coreset_size = int(len(X_train) * fraction)
     coreset_size = max(1, coreset_size)
     X_coreset, _, y_coreset, _ = train_test_split(
@@ -325,12 +347,13 @@ def stratified_sampling_coreset(X_train, y_train):
         stratify=y_train,
         random_state=RANDOM_STATE
     )
-    # Typically ensures coverage if coreset_size >= number_of_classes
+    # no need for ensure coverage helper function, already ensures by design
     return X_coreset, y_coreset
 
 def kmeans_clustering_coreset(X_train, y_train):
+    # - Ahmed
     if len(X_train) > 100000:
-        fraction = 0.01
+        fraction = 0.01 # for all coreset functions, used same coreset size as in binary classification
     else:
         fraction = 0.05
     coreset_size = int(len(X_train) * fraction)
@@ -352,10 +375,12 @@ def kmeans_clustering_coreset(X_train, y_train):
     X_coreset = pd.DataFrame(X_list)
     y_coreset = pd.Series(y_list)
 
+    # Ensure coverage
     X_coreset, y_coreset = ensure_class_coverage(X_coreset, y_coreset, X_train, y_train)
     return X_coreset, y_coreset
 
 def uncertainty_sampling_coreset(X_train, y_train):
+    # - Ahmed
     fraction = 0.1
     coreset_size = int(len(X_train) * fraction)
     coreset_size = max(1, coreset_size)
@@ -368,10 +393,12 @@ def uncertainty_sampling_coreset(X_train, y_train):
     X_coreset = X_train.iloc[indices]
     y_coreset = y_train.iloc[indices]
 
+    # Ensure coverage
     X_coreset, y_coreset = ensure_class_coverage(X_coreset, y_coreset, X_train, y_train)
     return X_coreset, y_coreset
 
 def importance_sampling_coreset(X_train, y_train):
+    # - Ahmed
     fraction = 0.1
     coreset_size = int(len(X_train) * fraction)
     coreset_size = max(1, coreset_size)
@@ -386,10 +413,12 @@ def importance_sampling_coreset(X_train, y_train):
     X_coreset = X_train.iloc[indices]
     y_coreset = y_train.iloc[indices]
 
+    # Ensure coverage
     X_coreset, y_coreset = ensure_class_coverage(X_coreset, y_coreset, X_train, y_train)
     return X_coreset, y_coreset
 
 def reservoir_sampling_coreset(X_train, y_train):
+    # - Ahmed
     fraction = 0.2
     coreset_size = int(len(X_train) * fraction)
     coreset_size = max(1, coreset_size)
@@ -400,10 +429,12 @@ def reservoir_sampling_coreset(X_train, y_train):
     X_coreset = X_train.iloc[selected_indices]
     y_coreset = y_train.iloc[selected_indices]
 
+    # Ensure coverage
     X_coreset, y_coreset = ensure_class_coverage(X_coreset, y_coreset, X_train, y_train)
     return X_coreset, y_coreset
 
 def gradient_based_coreset(X_train, y_train):
+    # - Colin
     fraction = 0.1
     total_coreset_size = int(len(X_train) * fraction)
     total_coreset_size = max(2, total_coreset_size)
@@ -444,6 +475,7 @@ def gradient_based_coreset(X_train, y_train):
     return X_coreset, y_coreset
 
 def clustering_based_coreset(X_train, y_train):
+    # - Ahmed
     if len(X_train) > 100000:
         fraction = 0.01
     else:
@@ -467,10 +499,21 @@ def clustering_based_coreset(X_train, y_train):
     X_coreset = pd.DataFrame(X_list)
     y_coreset = pd.Series(y_list)
 
+    # Ensure coverage
     X_coreset, y_coreset = ensure_class_coverage(X_coreset, y_coreset, X_train, y_train)
     return X_coreset, y_coreset
 
 def train_and_evaluate(X_train, y_train, X_test, y_test, coreset_method):
+    # - Based off Colin's function from binary class, but
+    # has been adjusted by Ahmed for Multi Class
+
+    # Applies coreset selection, trains the Logistic Regression model, and evaluates it.
+    # returns evaluation metrics for comparison and also to be collected as more data.
+    # evaluation data will not be used for meta-model, it is solely for further insights.
+    # As with regression, these metrics will be collected in a separate csv file.
+    # Even though we collected the same metrics in Binary Classification, use separate file for
+    # organization purposes.
+
     coreset_methods = {
         'none': no_coreset_selection,
         'random': random_sampling_coreset,
@@ -500,7 +543,7 @@ def train_and_evaluate(X_train, y_train, X_test, y_test, coreset_method):
     roc_auc = roc_auc_score(y_test, y_pred_proba, multi_class='ovr', average='macro')
 
     if SHOW_PLOTS:
-        # Skipping plotting individual class ROC curves for simplicity
+        # Skipping for multi class
         pass
 
     return {
@@ -513,7 +556,10 @@ def train_and_evaluate(X_train, y_train, X_test, y_test, coreset_method):
     }
 
 def main():
+    # - Done by Ahmed with a few small adjustments by Colin during data collection
 
+    # For null class dataset, preprocess first to handle the null class.
+    # Don't do this for all since it risks causing incorrect meta-data.
     if HAS_NULL_CLASS:
         data_preprocessed = preprocess_data(data, TARGET_COLUMN)
         dataset_features = extract_dataset_features(data_preprocessed, TARGET_COLUMN)

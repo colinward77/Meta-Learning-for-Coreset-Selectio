@@ -35,8 +35,12 @@ warnings.filterwarnings('ignore')
 # Set random seed for reproducibility
 RANDOM_STATE = 42
 
+# Optionally set a fixed random seed for further reproducibility
+#np.random.seed(23)
+
 # Flag to control whether plots are displayed
 SHOW_PLOTS = True  # Set to True to display plots, False for data collection
+# SHOW_PLOTS system set up by Colin
 
 # Task type
 TASK_TYPE = 'Binary Classification'  # Adjust as needed
@@ -219,36 +223,40 @@ TASK_TYPE = 'Binary Classification'  # Adjust as needed
 #NEG_LABEL = 0
 #data = pd.read_csv('Classification_Datasets/age_predictions_cleaned.csv')
 
-#---Sets to evaluate metamodel's prediction---#
-# 1 - resevoir
+#############################################
+#---Sets to check meta-model's prediction---#
+# DO NOT COLLECT METADATA FOR THESE,
+# THIS WOULD LEAD TO DATA LEAKAGE
+
+# 1
 #TARGET_COLUMN = 'Target'
 #DATASET_NAME = 'Customertravel.csv'
 #POS_LABEL = 1
 #NEG_LABEL = 0
 #data = pd.read_csv('MetaModel_Test_Sets/Customertravel.csv')
 
-# 2 - Importance/Uncertainty/resevoir/custering all good
-TARGET_COLUMN = 'Purchased'
-DATASET_NAME = 'social_ads.csv'
-POS_LABEL = 1
-NEG_LABEL = 0
-data = pd.read_csv('MetaModel_Test_Sets/social_ads.csv')
+# 2
+#TARGET_COLUMN = 'Purchased'
+#DATASET_NAME = 'social_ads.csv'
+#POS_LABEL = 1
+#NEG_LABEL = 0
+#data = pd.read_csv('MetaModel_Test_Sets/social_ads.csv')
 
-# 3 - All bad but Clustering
+# 3
 #TARGET_COLUMN = 'Growth_Milestone'
 #DATASET_NAME = 'plant_growth_data.csv'
 #POS_LABEL = 1
 #NEG_LABEL = 0
 #data = pd.read_csv('MetaModel_Test_Sets/plant_growth_data.csv')
 
-# 4 - Resevoir
+# 4
 #TARGET_COLUMN = 'Outcome'
 #DATASET_NAME = 'diabetes_dataset.csv'
 #POS_LABEL = 1
 #NEG_LABEL = 0
 #data = pd.read_csv('MetaModel_Test_Sets/diabetes_dataset.csv')
 
-# 5 -Gradient
+# 5
 #TARGET_COLUMN = 'PurchaseStatus'
 #DATASET_NAME = 'customer_purchase_data.csv'
 #POS_LABEL = 1
@@ -262,7 +270,7 @@ data = pd.read_csv('MetaModel_Test_Sets/social_ads.csv')
 #NEG_LABEL = 0
 #data = pd.read_csv('MetaModel_Test_Sets/happydata.csv')
 
-# 7 - most features have clear linear seperability leading to 100% sometimes
+# 7
 #TARGET_COLUMN = 'Class'
 #DATASET_NAME = 'riceClassification.csv'
 #POS_LABEL = 1
@@ -270,31 +278,31 @@ data = pd.read_csv('MetaModel_Test_Sets/social_ads.csv')
 #data = pd.read_csv('MetaModel_Test_Sets/riceClassification.csv')
 
 def preprocess_data(data, target_column, pos_label, neg_label, handle_unexpected='drop'):
-    """
-    Preprocesses the data for binary classification:
-    - Handles missing values separately for numerical and categorical columns
-    - Encodes categorical variables (if any) using one-hot encoding
-    - Scales numerical features using StandardScaler
-    - Encodes the target variable using POS_LABEL and NEG_LABEL
-    - Removes or raises errors for unexpected labels based on the handle_unexpected parameter
+    # - Colin
 
-    Parameters:
-    - data (pd.DataFrame): The input dataset.
-    - target_column (str): The name of the target column.
-    - pos_label: The label to be mapped to 1.
-    - neg_label: The label to be mapped to 0.
-    - handle_unexpected (str): How to handle unexpected labels. Options:
-        - 'drop': Remove rows with unexpected labels.
-        - 'error': Raise an error if unexpected labels are found.
+    # Preprocesses the data for binary classification:
+    # - Handles missing values separately for numerical and categorical columns
+    # - Encodes categorical variables (if any) using one-hot encoding
+    # - Scales numerical features using StandardScaler
+    # - Encodes the target variable using POS_LABEL and NEG_LABEL
+    # - Removes or raises errors for unexpected labels based on the handle_unexpected parameter
 
-    Returns:
-    - pd.DataFrame: The preprocessed dataset.
-    """
+    # Parameters:
+    # - data (pd.DataFrame): The input dataset.
+    # - target_column (str): The name of the target column.
+    # - pos_label: The label to be mapped to 1.
+    # - neg_label: The label to be mapped to 0.
+    # - handle_unexpected (str): How to handle unexpected labels. Options:
+    #     - 'drop': Remove rows with unexpected labels.
+    #     - 'error': Raise an error if unexpected labels are found.
+    #
+    # Returns:
+    # - pd.DataFrame: The preprocessed dataset.
 
     # Set up logging
     logger = logging.getLogger(__name__)
     if not logger.hasHandlers():
-        # Configure logging only if it hasn't been configured yet
+        # Configure if it hasn't been configured yet
         logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 
     # 1. Identify Numerical and Categorical Columns
@@ -382,9 +390,11 @@ def preprocess_data(data, target_column, pos_label, neg_label, handle_unexpected
 
 
 def extract_dataset_features(data, target_column):
-    """
-    Extracts features of the dataset that might influence coreset selection methods.
-    """
+    # - Colin
+
+    # Extracts features of the dataset that might influence coreset selection methods.
+    # These features will be used for meta-data and function will be reused across other scripts
+
     features = {}
 
     # Number of Instances and Features
@@ -486,17 +496,20 @@ def extract_dataset_features(data, target_column):
 # Coreset Selection Techniques
 
 def no_coreset_selection(X_train, y_train):
+    # - Ahmed
     return X_train, y_train
 
 def random_sampling_coreset(X_train, y_train):
-    fraction = 0.2  # Increased from 10% to 20%
+    # - Ahmed
+    fraction = 0.2
     coreset_size = int(len(X_train) * fraction)
     coreset_size = max(1, coreset_size)
     indices = np.random.choice(len(X_train), size=coreset_size, replace=False)
     return X_train.iloc[indices], y_train.iloc[indices]
 
 def stratified_sampling_coreset(X_train, y_train):
-    fraction = 0.2  # Increased from 10% to 20%
+    # - Ahmed
+    fraction = 0.2
     coreset_size = int(len(X_train) * fraction)
     coreset_size = max(1, coreset_size)
     X_coreset, _, y_coreset, _ = train_test_split(
@@ -508,10 +521,11 @@ def stratified_sampling_coreset(X_train, y_train):
     return X_coreset, y_coreset
 
 def kmeans_clustering_coreset(X_train, y_train):
+    # - Ahmed
     if len(X_train) > 100000:
         fraction = 0.01  # Use 1% for large datasets
     else:
-        fraction = 0.05  # Increased from 1% to 5%
+        fraction = 0.05
     coreset_size = int(len(X_train) * fraction)
     coreset_size = max(1, coreset_size)
     if SHOW_PLOTS:
@@ -536,7 +550,8 @@ def kmeans_clustering_coreset(X_train, y_train):
     return X_coreset.reset_index(drop=True), y_coreset.reset_index(drop=True)
 
 def uncertainty_sampling_coreset(X_train, y_train):
-    fraction = 0.1  # Increased from 5% to 10%
+    # - Ahmed
+    fraction = 0.1
     coreset_size = int(len(X_train) * fraction)
     coreset_size = max(1, coreset_size)
     model = LogisticRegression(max_iter=1000, random_state=RANDOM_STATE)
@@ -547,7 +562,8 @@ def uncertainty_sampling_coreset(X_train, y_train):
     return X_train.iloc[indices], y_train.iloc[indices]
 
 def importance_sampling_coreset(X_train, y_train):
-    fraction = 0.1  # Increased from 5% to 10%
+    # - Ahmed
+    fraction = 0.1
     coreset_size = int(len(X_train) * fraction)
     coreset_size = max(1, coreset_size)
     model = LogisticRegression(max_iter=1000, random_state=RANDOM_STATE)
@@ -560,7 +576,8 @@ def importance_sampling_coreset(X_train, y_train):
     return X_train.iloc[indices], y_train.iloc[indices]
 
 def reservoir_sampling_coreset(X_train, y_train):
-    fraction = 0.2  # Increased from 10% to 20%
+    # - Ahmed
+    fraction = 0.2
     coreset_size = int(len(X_train) * fraction)
     coreset_size = max(1, coreset_size)
     n = len(X_train)
@@ -570,7 +587,8 @@ def reservoir_sampling_coreset(X_train, y_train):
     return X_train.iloc[selected_indices], y_train.iloc[selected_indices]
 
 def gradient_based_coreset(X_train, y_train):
-    fraction = 0.1  # Adjust as needed
+    # - Colin
+    fraction = 0.1
     total_coreset_size = int(len(X_train) * fraction)
     total_coreset_size = max(2, total_coreset_size)
 
@@ -621,10 +639,11 @@ def gradient_based_coreset(X_train, y_train):
 
 
 def clustering_based_coreset(X_train, y_train):
+    # - Ahmed
     if len(X_train) > 100000:
         fraction = 0.01  # Use 1% for large datasets
     else:
-        fraction = 0.05  # Increased from 1% to 5%
+        fraction = 0.05
     coreset_size = int(len(X_train) * fraction)
     coreset_size = max(1, coreset_size)
     if SHOW_PLOTS:
@@ -650,9 +669,12 @@ def clustering_based_coreset(X_train, y_train):
 
 # Function to train and evaluate the model
 def train_and_evaluate(X_train, y_train, X_test, y_test, coreset_method):
-    """
-    Applies coreset selection, trains the Logistic Regression model, and evaluates it.
-    """
+    # - Colin
+
+    # Applies coreset selection, trains the Logistic Regression model, and evaluates it.
+    # returns evaluation metrics for comparison and also to be collected as more data.
+    # evaluation data will not be used for meta-model, it is solely for further insights.
+
     coreset_methods = {
         'none': no_coreset_selection,
         'random': random_sampling_coreset,
@@ -682,7 +704,7 @@ def train_and_evaluate(X_train, y_train, X_test, y_test, coreset_method):
 
     # Evaluate the model
     # Confusion Matrix
-    cm = confusion_matrix(y_test, y_pred)
+    cm = confusion_matrix(y_test, y_pred) # previously used
 
     # ROC AUC Score
     roc_auc = roc_auc_score(y_test, y_pred_proba)
@@ -717,6 +739,8 @@ def train_and_evaluate(X_train, y_train, X_test, y_test, coreset_method):
     }
 
 def main():
+    # - Colin
+
     # Extract dataset features
     dataset_features = extract_dataset_features(data, TARGET_COLUMN)
 
@@ -823,13 +847,14 @@ def main():
         )
 
         # Write dataset characteristics to meta_dataset.csv
-        meta_dataset_file = 'meta_dataset.csv'
+        #meta_dataset_file = 'meta_dataset.csv'
+
         meta_dataset_columns_order = [
             'dataset_name', 'task_type', 'num_instances', 'num_features',
             'num_numerical_features', 'num_categorical_features', 'feature_type',
             'num_classes', 'class_balance', 'imbalance_ratio',
             #'missing_values',
-            #'missing_value_percentage',
+            #'missing_value_percentage', # previously collected, but removed after adjusting preprocess to handle
             'dimensionality', 'mean_correlation',
             'max_correlation', 'feature_redundancy', 'mean_of_means',
             'variance_of_means', 'mean_of_variances', 'variance_of_variances',

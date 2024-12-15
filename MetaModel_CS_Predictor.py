@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import KFold, GridSearchCV
+from sklearn.model_selection import KFold, GridSearchCV, train_test_split
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
@@ -8,51 +8,64 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import LabelEncoder
 from sklearn.base import BaseEstimator, TransformerMixin
 
+# This whole script was written by Colin
+#
+# The model does not use the augmented data
+# resulting in worse accuracy than the other versions
+# of the model that use augmented data. It uses random forest and
+# experimented with the use of a transformer that
+# puts more weight on either classification vs regression,
+#
+# This is the only version of the model that allows
+# the user to define their own dataset and recieve a prediction
+# for this fuctionality set full_train_mode to True at the bottom
 
-# 1 -res
+# 1
 #USER_DATASET_PATH = 'MetaModel_Test_Sets/Customertravel.csv'
 #USER_TASK_TYPE = 'Binary Classification'
 #USER_DATASET_TARGET_COLUMN = 'Target'
 
-# 2 -grad
+# 2 - DEMO BINARY SET
 #USER_DATASET_PATH = 'MetaModel_Test_Sets/social_ads.csv'
 #USER_TASK_TYPE = 'Binary Classification'
 #USER_DATASET_TARGET_COLUMN = 'Purchased'
 
-# 3 -res
+# 3
 #USER_DATASET_PATH = 'MetaModel_Test_Sets/plant_growth_data.csv'
 #USER_TASK_TYPE = 'Binary Classification'
 #USER_DATASET_TARGET_COLUMN = 'Growth_Milestone'
 
-# 4 -grad
+# 4
 #USER_DATASET_PATH = 'MetaModel_Test_Sets/diabetes_dataset.csv'
 #USER_TASK_TYPE = 'Binary Classification'
 #USER_DATASET_TARGET_COLUMN = 'Outcome'
 
-# 5 -res
+# 5
 #USER_DATASET_PATH = 'MetaModel_Test_Sets/customer_purchase_data.csv'
 #USER_TASK_TYPE = 'Binary Classification'
 #USER_DATASET_TARGET_COLUMN = 'PurchaseStatus'
 
-# 6 -grad
+# 6
 #USER_DATASET_PATH = 'MetaModel_Test_Sets/happydata.csv'
 #USER_TASK_TYPE = 'Binary Classification'
 #USER_DATASET_TARGET_COLUMN = 'happy'
 
-# 7 -strat
+# 7
 #USER_DATASET_PATH = 'MetaModel_Test_Sets/riceClassification.csv'
 #USER_TASK_TYPE = 'Binary Classification'
 #USER_DATASET_TARGET_COLUMN = 'Class'
 
-# 8 - rando
+# 8
 #USER_DATASET_PATH = 'MetaModel_Test_Sets/CO2 Emissions.csv'
 #USER_TASK_TYPE = 'Regression'
 #USER_DATASET_TARGET_COLUMN = 'CO2 Emissions(g/km)'
 
-# 9 - res
-USER_DATASET_PATH = 'MetaModel_Test_Sets/all_audio_features_modified.csv'
-USER_TASK_TYPE = 'Multi-Class Classification'
-USER_DATASET_TARGET_COLUMN = 'genre'
+# 9
+#USER_DATASET_PATH = 'MetaModel_Test_Sets/all_audio_features_modified.csv'
+#USER_TASK_TYPE = 'Multi-Class Classification'
+#USER_DATASET_TARGET_COLUMN = 'genre'
+
+
 
 # Path to the meta-data CSV file
 META_DATA_PATH = 'meta_dataset.csv'
@@ -258,20 +271,38 @@ def main(full_train_mode=False):
             ]
         )),
         # No imputer here since we handled NaNs preemptively in the dataframe
-        ('classifier', RandomForestClassifier(random_state=42, n_estimators=21, min_samples_split=4, class_weight='balanced'))
+        ('classifier', RandomForestClassifier(random_state=42, n_estimators=36, min_samples_split=2, max_depth=5)) # class_weight='balanced'))
     ])
 
     if not full_train_mode:
-        param_grid = {
-            'classifier__n_estimators': [18, 19, 20, 21, 22],
-            'classifier__max_depth': [None, 5, 10, 15],
-            'classifier__min_samples_split': [2, 4, 6]
-        }
-        kf = KFold(n_splits=5, shuffle=True, random_state=42)
-        grid_search = GridSearchCV(pipeline, param_grid, cv=kf, scoring='accuracy')
-        grid_search.fit(X, y)
-        print("Best parameters:", grid_search.best_params_)
-        print("Best cross-validation accuracy:", grid_search.best_score_)
+        # Instead of GridSearchCV, use a stratified train-test split
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=28)
+
+        pipeline.fit(X_train, y_train)
+        accuracy = pipeline.score(X_test, y_test)
+        print("Test Accuracy 10 split:", accuracy)
+
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+        pipeline.fit(X_train, y_train)
+        accuracy = pipeline.score(X_test, y_test)
+        print("Test Accuracy 20 split:", accuracy)
+
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+        pipeline.fit(X_train, y_train)
+        accuracy = pipeline.score(X_test, y_test)
+        print("Test Accuracy 30 split:", accuracy)
+        #param_grid = {
+        #    'classifier__n_estimators': [36],
+        #    'classifier__max_depth': [None, 3, 4, 5, 6, 7, 8],
+        #    'classifier__min_samples_split': [2]
+        #}
+        #kf = KFold(n_splits=5, shuffle=True, random_state=42)
+        #grid_search = GridSearchCV(pipeline, param_grid, cv=kf, scoring='accuracy')
+        #grid_search.fit(X, y)
+        #print("Best parameters:", grid_search.best_params_)
+        #print("Best cross-validation accuracy:", grid_search.best_score_)
     else:
         pipeline.fit(X, y)
         user_data = pd.read_csv(USER_DATASET_PATH)
