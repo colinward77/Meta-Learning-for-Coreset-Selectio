@@ -346,7 +346,7 @@ def extract_dataset_features(data, target_column):
     return features
 
 
-# Coreset Selection Techniques
+# Coreset Selection Techniques:
 
 # Stratified and Ucertainty removed because their core concepts aren't applicable to regression.
 # These two were replaced by Farthest and Leverage which are two coreset selection techniques

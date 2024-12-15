@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 # This model uses a decision tree with the augmented
 # meta-data. It saw worse performance than
 # random forest with data augmentation but better performance
-# than random forest without data augmentation
+# than random forest without data augmentation.
 #
 # Ahmed also included tree plotting, a useful feature
 # to understand the decision-making of the model.

@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 # Ahmed also included tree plotting, a useful feature
 # to understand the decision-making of the model.
 
-# Load dataset (replace with appropriate file path)
+# Load dataset
 file_path = '/Users/ahmed/Desktop/Machine Learning/final_augmented.csv'
 df = pd.read_csv(file_path)
 

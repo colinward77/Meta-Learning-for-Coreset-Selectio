@@ -39,7 +39,7 @@ RANDOM_STATE = 42
 #np.random.seed(23)
 
 # Flag to control whether plots are displayed
-SHOW_PLOTS = True  # Set to True to display plots, False for data collection
+SHOW_PLOTS = True  # Set to True to display plots, False for data collection.
 # SHOW_PLOTS system set up by Colin
 
 # Task type
