@@ -39,7 +39,7 @@ RANDOM_STATE = 42
 
 # Flag to control whether plots are displayed
 SHOW_PLOTS = True  # Set to True to display plots, False for data collection
-# SHOW_PLOTS set up by Colin
+# SHOW_PLOTS set up by Colin.
 
 # Task type - now Regression
 TASK_TYPE = 'Regression'  # Adjusted from 'Binary Classification' to 'Regression'

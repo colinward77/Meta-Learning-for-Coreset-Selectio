@@ -18,7 +18,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 #
 # This is the only version of the model that allows
 # the user to define their own dataset and recieve a prediction
-# for this fuctionality set full_train_mode to True at the bottom.
+# for this fuctionality set full_train_mode to True at the bottom
 
 # 1
 #USER_DATASET_PATH = 'MetaModel_Test_Sets/Customertravel.csv'

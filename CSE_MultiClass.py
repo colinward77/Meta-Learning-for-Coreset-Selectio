@@ -556,7 +556,7 @@ def train_and_evaluate(X_train, y_train, X_test, y_test, coreset_method):
     }
 
 def main():
-    # - Done by Ahmed with a few small adjustments by Colin during data collection.
+    # - Done by Ahmed with a few small adjustments by Colin during data collection
 
     # For null class dataset, preprocess first to handle the null class.
     # Don't do this for all since it risks causing incorrect meta-data.

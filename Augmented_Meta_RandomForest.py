@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 # This was the best performing model through the
 # use of Random Forest and data augmentation.
 # Ahmed also included tree plotting, a useful feature
-# to understand the decision-making of the model.
+# to understand the decision-making of the model
 
 # Load dataset
 file_path = '/Users/ahmed/Desktop/Machine Learning/final_augmented.csv'
